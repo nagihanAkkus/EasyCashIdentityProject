@@ -25,6 +25,7 @@ namespace EasyCashIdentityProject.PresentationLayer.Controllers
         [HttpPost]
         public async Task<IActionResult> Index(AppUserRegisterDto appUserRegisterDto)
         {
+            // burada önce mail adresi daha önce eklenmişmi kontrol et
             if (ModelState.IsValid)
             { 
                 Random random = new Random();
