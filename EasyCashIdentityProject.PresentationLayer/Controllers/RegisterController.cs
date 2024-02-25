@@ -1,7 +1,9 @@
 ﻿using EasyCashIdentityProject.DtoLayer.Dtos.AppUserDtos;
 using EasyCashIdentityProject.EntityLayer.Concrete;
+using MailKit.Net.Smtp;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using MimeKit;
 
 namespace EasyCashIdentityProject.PresentationLayer.Controllers
 {
@@ -24,8 +26,12 @@ namespace EasyCashIdentityProject.PresentationLayer.Controllers
         public async Task<IActionResult> Index(AppUserRegisterDto appUserRegisterDto)
         {
             if (ModelState.IsValid)
-            {
-                AppUser appUser = new AppUser()
+            { 
+                Random random = new Random();
+                int code;
+                code = random.Next(100000, 1000000);
+
+				AppUser appUser = new AppUser()
                 {
                     UserName = appUserRegisterDto.UserName,
                     Name = appUserRegisterDto.Name,
@@ -33,11 +39,33 @@ namespace EasyCashIdentityProject.PresentationLayer.Controllers
                     Email = appUserRegisterDto.Email,
                     City = "sdwss",
                     District = "gmvfd",
-                    ImageUrl = "dhbdj"
+                    ImageUrl = "dhbdj",
+                    ConfirmCode = code
                 };
                 var result = await _userManager.CreateAsync(appUser,appUserRegisterDto.Password);
                 if (result.Succeeded)
                 {
+                    MimeMessage mimeMessage = new MimeMessage();
+                    MailboxAddress mailboxAddressFrom = new MailboxAddress("Easy Cash Admin", "nagihan.akkus.76@gmail.com");
+                    MailboxAddress mailboxAddressTo = new MailboxAddress("User", appUser.Email);
+
+                    mimeMessage.From.Add(mailboxAddressFrom);
+                    mimeMessage.To.Add(mailboxAddressTo);
+
+                    var bodyBuilder = new BodyBuilder();
+                   // bodyBuilder.TextBody= "<b>Kayıt işlemini gerçekleştirmek için onay kodunuz : </b>" + "<u>"+code+"</u>";
+                    bodyBuilder.HtmlBody= $"<b>Kayıt işlemini gerçekleştirmek için onay kodunuz : </b> <u>{code}</u>";
+                    mimeMessage.Body = bodyBuilder.ToMessageBody();
+
+                    mimeMessage.Subject = "Easy Cash Onay Kodu";
+
+                    SmtpClient client = new SmtpClient();
+                    client.Connect("smtp.gmail.com", 587, false);
+                    client.Authenticate("nagihan.akkus.76@gmail.com", "sahx pxnd ytbw qcnv");
+                    client.Send(mimeMessage);
+                    client.Disconnect(true);
+
+                    TempData["Mail"] = appUserRegisterDto.Email;
                     return RedirectToAction("Index","ConfirmMail");
                 }
                 else
